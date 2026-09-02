@@ -1,0 +1,50 @@
+.search-box {
+  padding: 20px 0  0 20px;
+}
+
+table {
+  background: transparent;
+  padding: 0px 20px 0 20px;
+}
+
+.mat-column-title {
+  max-width: 200px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.mat-column-description {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pagination-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 20px 0 20px;
+  color: #6b7280;
+  font-size: 16px;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  button {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 24px;
+    color: #374151;
+    padding: 4px 8px;
+
+    &:disabled {
+      color: #d1d5db;
+      cursor: not-allowed;
+    }
+  }
+}

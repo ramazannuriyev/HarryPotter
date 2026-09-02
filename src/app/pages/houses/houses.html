@@ -1,0 +1,21 @@
+<div class="houses-grid" *ngIf="houses$ | async as houses">
+  <div
+    class="house-card"
+    *ngFor="let house of houses"
+    [style.border-color]="getColor(house.colors[0])"
+  >
+    <div class="house-avatar">{{ house.emoji }}</div>
+    <div class="house-info">
+      <h3 class="house-name">{{ house.house }}</h3>
+      <p class="house-founder">Founder: {{ house.founder }}</p>
+      <p class="house-colors">
+        colors:
+        <span
+          *ngFor="let color of house.colors"
+          class="color-dot"
+          [style.background]="getColor(color)"
+        ></span>
+      </p>
+    </div>
+  </div>
+</div>
