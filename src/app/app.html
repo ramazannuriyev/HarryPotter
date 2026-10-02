@@ -7,21 +7,39 @@
       </div>
       <div class="languages">
         <div>
-          <input type="radio" id="option1" name="choice" value="yes" />
+          <input
+            type="radio"
+            id="option1"
+            name="choice"
+            [checked]="languageService.current() === 'it'"
+            (change)="languageService.setLanguage('it')"
+          />
           <label for="option1">IT</label>
         </div>
 
         <div>
-          <input type="radio" id="option2" name="choice" value="no" checked />
+          <input
+            type="radio"
+            id="option2"
+            name="choice"
+            [checked]="languageService.current() === 'en'"
+            (change)="languageService.setLanguage('en')"
+          />
           <label for="option2">EN</label>
         </div>
       </div>
     </div>
 
     <nav class="navigation">
-      <a routerLink="/books" routerLinkActive="active">Books</a>
-      <a routerLink="/houses" routerLinkActive="active">Houses</a>
-      <a routerLink="/characters" routerLinkActive="active">Characters</a>
+      <a routerLink="/books" routerLinkActive="active">{{
+        'nav.books' | translate: languageService.current()
+      }}</a>
+      <a routerLink="/houses" routerLinkActive="active">{{
+        'nav.houses' | translate: languageService.current()
+      }}</a>
+      <a routerLink="/characters" routerLinkActive="active">{{
+        'nav.characters' | translate: languageService.current()
+      }}</a>
     </nav>
   </div>
   <router-outlet></router-outlet>

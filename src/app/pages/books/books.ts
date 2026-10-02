@@ -1,66 +1,59 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { HarryPotterService } from '../../services/harry-potter';
+import { Component, computed, inject, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatTableModule } from '@angular/material/table';
+import { Book } from './models/book.model';
+import { BookApiService } from './services/book.api.service';
+import { LanguageService } from '../../core/services/language';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
-  imports: [CommonModule, FormsModule, MatFormFieldModule, MatInputModule, MatTableModule],
+  imports: [MatFormFieldModule, MatInputModule, MatTableModule, MatPaginatorModule, TranslatePipe],
   selector: 'app-books',
   styleUrl: './books.scss',
   templateUrl: './books.html',
 })
 export class Books {
-  displayedColumns: string[] = ['title', 'releaseDate', 'pages', 'description'];
-  private allBooks: any[] = [];
-  filteredBooks: any[] = [];
-  pagedBooks: any[] = [];
+  protected displayedColumns: string[] = ['title', 'releaseDate', 'pages', 'description'];
 
-  pageSize = 5;
-  pageIndex = 0;
+  private bookApi = inject(BookApiService);
 
-  constructor(
-    private harryPotterService: HarryPotterService,
-    private cdr: ChangeDetectorRef,
-  ) {
-    this.harryPotterService.getBooks().subscribe((data) => {
-      this.allBooks = data as any[];
-      this.filteredBooks = data as any[];
-      this.updatePage();
-      this.cdr.markForCheck();
-    });
-  }
+  private search = signal('');
+  protected pageSize = signal(5);
+  protected pageIndex = signal(0);
 
-  applyFilter(event: Event) {
-    const value = (event.target as HTMLInputElement).value.trim().toLowerCase();
-    this.filteredBooks = this.allBooks.filter((book) => book.title.toLowerCase().includes(value));
-    this.pageIndex = 0;
-    this.updatePage();
-  }
+  protected languageService = inject(LanguageService);
 
-  get totalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredBooks.length / this.pageSize));
-  }
+  protected booksResource = rxResource({
+    params: () => this.languageService.current(),
+    stream: ({ params }) => this.bookApi.getBooks(params),
+    defaultValue: [] as Book[],
+  });
 
-  updatePage() {
-    const start = this.pageIndex * this.pageSize;
-    const end = start + this.pageSize;
-    this.pagedBooks = this.filteredBooks.slice(start, end);
-  }
-
-  nextPage() {
-    if (this.pageIndex < this.totalPages - 1) {
-      this.pageIndex++;
-      this.updatePage();
+  protected filteredBooks = computed(() => {
+    const value = this.search().trim().toLowerCase();
+    const books = this.booksResource.value();
+    if (!value) {
+      return books;
     }
+    return books.filter((book) => book.title.toLowerCase().includes(value));
+  });
+
+  protected pagedBooks = computed(() => {
+    const start = this.pageIndex() * this.pageSize();
+    return this.filteredBooks().slice(start, start + this.pageSize());
+  });
+
+  protected applyFilter(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.search.set(value);
+    this.pageIndex.set(0);
   }
 
-  prevPage() {
-    if (this.pageIndex > 0) {
-      this.pageIndex--;
-      this.updatePage();
-    }
+  protected onPageChange(event: PageEvent) {
+    this.pageIndex.set(event.pageIndex);
+    this.pageSize.set(event.pageSize);
   }
 }

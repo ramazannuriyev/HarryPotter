@@ -1,99 +1,104 @@
-import { Component, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { HarryPotterService } from '../../services/harry-potter';
-import { Character } from '../../models/character.model';
-import { MatTableModule } from '@angular/material/table';
-import { House } from '../../models/house.model';
-import { HOUSE_COLOR_MAP } from '../../constants/house-colors';
-import { MatDialog } from '@angular/material/dialog';
-import { MatIconModule } from '@angular/material/icon';
+import { Component, computed, inject, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { CharacterDetailsDialog } from './character-details-dialog/character-details-dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatTableModule } from '@angular/material/table';
+import { HOUSE_COLOR_MAP } from '../../core/constants/color';
+import { House } from '../../features/house/models/house.model';
+import { HouseApiService } from '../../features/house/services/house.api.service';
+import { CharacterDetailsDialog } from './components/character-details-dialog/character-details-dialog';
+import { Character } from './models/character.model';
+import { CharacterApiService } from './services/character.api.service';
+import { LanguageService } from '../../core/services/language';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
   imports: [
-    CommonModule,
     MatTableModule,
     MatButtonModule,
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
+    MatPaginatorModule,
+    TranslatePipe,
   ],
   selector: 'app-characters',
   styleUrl: './characters.scss',
   templateUrl: './characters.html',
 })
 export class Characters {
-  displayedColumns: string[] = ['fullName', 'birthdate', 'hogwartsHouse', 'nickname'];
-  allCharacters = signal<Character[]>([]);
-  houses = signal<House[]>([]);
+  protected displayedColumns: string[] = ['fullName', 'birthdate', 'hogwartsHouse', 'nickname'];
 
-  search = signal('');
-  pageSize = 5;
-  pageIndex = signal(0);
+  private search = signal('');
+  protected pageSize = signal(5);
+  protected pageIndex = signal(0);
 
-  constructor(
-    private harryPotterService: HarryPotterService,
-    private dialog: MatDialog,
-  ) {
-    this.harryPotterService.getCharacters().subscribe((data) => {
-      this.allCharacters.set(data);
-    });
+  private characterApi = inject(CharacterApiService);
+  private houseApi = inject(HouseApiService);
+  private dialog = inject(MatDialog);
 
-    this.harryPotterService.getHouses().subscribe((data) => {
-      this.houses.set(data);
-    });
-  }
+  protected languageService = inject(LanguageService);
 
-  get filteredCharacters(): Character[] {
+  private charactersResource = rxResource({
+    params: () => this.languageService.current(),
+    stream: ({ params }) => this.characterApi.getCharacters(params),
+    defaultValue: [] as Character[],
+  });
+
+  private housesResource = rxResource({
+    params: () => this.languageService.current(),
+    stream: ({ params }) => this.houseApi.getHouses(params),
+    defaultValue: [] as House[],
+  });
+
+  protected filteredCharacters = computed(() => {
     const value = this.search().trim().toLowerCase();
+    const characters = this.charactersResource.value();
     if (!value) {
-      return this.allCharacters();
+      return characters;
     }
-    return this.allCharacters().filter((c) => c.fullName.toLowerCase().includes(value));
-  }
+    return characters.filter((c) => c.fullName.toLowerCase().includes(value));
+  });
 
-  applyFilter(event: Event) {
+  protected applyFilter(event: Event) {
     const value = (event.target as HTMLInputElement).value;
     this.search.set(value);
     this.pageIndex.set(0);
   }
 
-  get totalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredCharacters.length / this.pageSize));
+  protected pagedCharacters = computed(() => {
+    const start = this.pageIndex() * this.pageSize();
+    const end = start + this.pageSize();
+    return this.filteredCharacters().slice(start, end);
+  });
+
+  protected onPageChange(event: PageEvent) {
+    this.pageIndex.set(event.pageIndex);
+    this.pageSize.set(event.pageSize);
   }
 
-  get pagedCharacters(): Character[] {
-    const start = this.pageIndex() * this.pageSize;
-    const end = start + this.pageSize;
-    return this.filteredCharacters.slice(start, end);
+  protected getHouseByName(name: string): House | undefined {
+    return this.housesResource.value().find((h) => h.house === name);
   }
 
-  nextPage() {
-    if (this.pageIndex() < this.totalPages - 1) {
-      this.pageIndex.update((v) => v + 1);
-    }
-  }
-
-  prevPage() {
-    if (this.pageIndex() > 0) {
-      this.pageIndex.update((v) => v - 1);
-    }
-  }
-
-  getHouseByName(name: string): House | undefined {
-    return this.houses().find((h) => h.house === name);
-  }
-
-  getColor(colorName: string): string {
+  protected getColor(colorName: string): string {
     return HOUSE_COLOR_MAP[colorName] ?? '#d1d5db';
   }
 
-  openDetails(character: Character) {
-    this.dialog.open(CharacterDetailsDialog, {
+  protected openDetails(character: Character) {
+    const houseClass = 'house-panel-' + character.hogwartsHouse.toLowerCase();
+
+    const dialogRef = this.dialog.open(CharacterDetailsDialog, {
       data: character,
+      panelClass: houseClass,
+    });
+
+    dialogRef.afterClosed().subscribe(() => {
+      this.charactersResource.update((list) => [...list]);
     });
   }
 }

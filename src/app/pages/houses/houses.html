@@ -1,21 +1,25 @@
-<div class="houses-grid" *ngIf="houses$ | async as houses">
-  <div
-    class="house-card"
-    *ngFor="let house of houses"
-    [style.border-color]="getColor(house.colors[0])"
-  >
-    <div class="house-avatar">{{ house.emoji }}</div>
-    <div class="house-info">
-      <h3 class="house-name">{{ house.house }}</h3>
-      <p class="house-founder">Founder: {{ house.founder }}</p>
-      <p class="house-colors">
-        colors:
-        <span
-          *ngFor="let color of house.colors"
-          class="color-dot"
-          [style.background]="getColor(color)"
-        ></span>
-      </p>
-    </div>
+@if (housesResource.isLoading()) {
+  <p class="status">{{ 'houses.loading' | translate: languageService.current() }}</p>
+} @else if (housesResource.error()) {
+  <p class="status">{{ 'houses.error' | translate: languageService.current() }}</p>
+} @else {
+  <div class="houses-grid">
+    @for (house of housesResource.value(); track house.house) {
+      <div class="house-card" [style.border-color]="getColor(house.colors[0])">
+        <div class="house-avatar">{{ house.emoji }}</div>
+        <div class="house-info">
+          <h3 class="house-name">{{ house.house }}</h3>
+          <p class="house-founder">
+            {{ 'houses.founder' | translate: languageService.current() }}: {{ house.founder }}
+          </p>
+          <p class="house-colors">
+            {{ 'houses.colors' | translate: languageService.current() }}:
+            @for (color of house.colors; track color) {
+              <span class="color-dot" [style.background]="getColor(color)"></span>
+            }
+          </p>
+        </div>
+      </div>
+    }
   </div>
-</div>
+}

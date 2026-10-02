@@ -1,26 +1,31 @@
 import { Routes } from '@angular/router';
 import { Books } from './pages/books/books';
-import { Houses} from './pages/houses/houses'
+import { Houses } from './pages/houses/houses';
 import { Characters } from './pages/characters/characters';
 
 export const routes: Routes = [
   {
     path: '',
     redirectTo: 'books',
-    pathMatch: 'full'
+    pathMatch: 'full',
   },
   {
     path: 'books',
-    component: Books
+    component: Books,
   },
 
   {
     path: 'houses',
-    component: Houses
+    component: Houses,
   },
 
   {
     path: 'characters',
-    component: Characters
-  }
+    component: Characters,
+  },
+
+  {
+    path: '**',
+    redirectTo: 'books',
+  },
 ];
